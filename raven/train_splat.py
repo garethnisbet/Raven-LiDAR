@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import threading
 from pathlib import Path
 
 import cv2
@@ -535,6 +536,8 @@ def main():
     ap.add_argument("--pose-lr", type=float, default=1e-3, help="pose-refinement learning rate")
     ap.add_argument("--pose-warmup", type=int, default=500,
                     help="iters before pose refinement starts (let gaussians form first)")
+    ap.add_argument("--view", action="store_true",
+                    help="after export, open the splat in the SuperSplat web editor")
     args = ap.parse_args()
 
     cap = Capture.from_args(args)
@@ -547,6 +550,7 @@ def main():
         export_surfel(Path(args.lidar), Path(args.out),
                       radius_mult=args.surfel_radius, thin_frac=args.surfel_thin,
                       adaptive=not args.surfel_uniform)
+        _maybe_view(args)
         return
 
     args.model = args.model or str(cap.p("colmap", "undistorted", "sparse"))
@@ -562,6 +566,23 @@ def main():
         args.images = str(cap.p("images"))
     ensure_cuda_home()
     train(args)
+    _maybe_view(args)
+
+
+def _maybe_view(args) -> None:
+    """If ``--view``, serve the exported splat and open it in SuperSplat."""
+    if not getattr(args, "view", False):
+        return
+    from raven.view_splat import open_in_supersplat
+
+    httpd, url = open_in_supersplat(Path(args.out))
+    print(f"opened in SuperSplat: {url}\nCtrl-C to stop serving.")
+    try:
+        threading.Event().wait()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        httpd.shutdown()
 
 
 if __name__ == "__main__":

@@ -111,6 +111,9 @@ class EditorApp:
         self.preview_keep: np.ndarray | None = None  # True = keep
         self.show_box = False
         self.build_proc: subprocess.Popen | None = None
+        # Local HTTP server backing "Open in SuperSplat"; kept alive for the
+        # process lifetime so the editor can (re)fetch the served splat.
+        self._supersplat_httpd = None
 
         self.fov = 60.0
         self.ortho = False
@@ -312,6 +315,9 @@ class EditorApp:
         self.build_btn = gui.Button("Save + Build Splat")
         self.build_btn.set_on_clicked(self._build_splat)
         p.add_child(self.build_btn)
+        self.view_btn = gui.Button("Open in SuperSplat")
+        self.view_btn.set_on_clicked(self._open_in_supersplat)
+        p.add_child(self.view_btn)
         self.build_status = gui.Label("")
         p.add_child(self.build_status)
         self.build_progress = gui.ProgressBar()
@@ -1100,6 +1106,33 @@ class EditorApp:
             target=self._run_steps, args=(steps, env),
             kwargs={"done_msg": f"done → {self.cap.p('splat.ply')}"}, daemon=True,
         ).start()
+
+    def _open_in_supersplat(self):
+        """Serve the current/just-built splat and open it in the SuperSplat editor."""
+        # Prefer a splat loaded for editing; otherwise the capture's built splat.
+        if self.is_splat and self.path:
+            ply = Path(self.path)
+        elif self.cap is not None:
+            ply = self.cap.p("splat.ply")
+        else:
+            self._message("Load a capture or splat first.")
+            return
+        if not ply.exists():
+            self._message("No splat to view yet — build one first\n(Save + Build Splat).")
+            return
+
+        from raven.view_splat import open_in_supersplat
+
+        # Replace any previous server so opens don't leak ports.
+        if self._supersplat_httpd is not None:
+            self._supersplat_httpd.shutdown()
+            self._supersplat_httpd = None
+        try:
+            self._supersplat_httpd, _url = open_in_supersplat(ply)
+        except Exception as exc:  # noqa: BLE001
+            self._message(f"Couldn't open SuperSplat:\n{exc}")
+            return
+        self._post_status(f"opened {ply.name} in SuperSplat (browser)")
 
     def _run_steps(self, steps, env, done_msg=None, on_success=None):
         log = open(self.cap.ensure_work() / "build.log", "w")

@@ -106,6 +106,7 @@ python -m raven.recolor --data "$DATA"
 # 5. Train splats and export a standard 3DGS .ply.
 python -m raven.train_splat --data "$DATA" --iters 30000               # COLMAP init
 python -m raven.train_splat --data "$DATA" --iters 30000 --init lidar  # lidar init
+python -m raven.train_splat --data "$DATA" --iters 30000 --view        # + open in SuperSplat
 
 # Or the whole thing at once:
 scripts/run_pipeline.sh "$DATA"
@@ -133,7 +134,12 @@ needed.
 - **Alignment reliability:** `raven.align` reports a `fitness`; below ~0.3 it is
   unreliable — train with the default `--init colmap` instead of `--init lidar`.
 - **Viewing splats:** `work/splat.ply` loads in standard 3DGS viewers
-  (e.g. SuperSplat, antimatter15/splat, the Nerfstudio viewer).
+  (e.g. SuperSplat, antimatter15/splat, the Nerfstudio viewer). For a one-click
+  open, use `python -m raven.view_splat --data "$DATA"`, the trainer's `--view`
+  flag, or the cloud editor's **Open in SuperSplat** button — each serves the
+  splat over a short-lived localhost server and launches the
+  [SuperSplat](https://superspl.at/editor) web editor pointed at it (nothing is
+  uploaded; the browser fetches it from your machine).
 
 ## Module map
 
@@ -148,4 +154,5 @@ needed.
 | `raven/align.py` | Fit similarity transform: lidar cloud → COLMAP frame |
 | `raven/recolor.py` | Project photos onto the cloud for true RGB (z-buffer occlusion) |
 | `raven/train_splat.py` | gsplat training → 3DGS `.ply` |
+| `raven/view_splat.py` | Serve `splat.ply` locally + open it in the SuperSplat web editor |
 ```
