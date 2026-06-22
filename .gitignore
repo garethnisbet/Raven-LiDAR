@@ -1,0 +1,11 @@
+# Working outputs
+work/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Large captured data (keep out of git)
+*.bag
+thumbnail/.hierarchyChunks/

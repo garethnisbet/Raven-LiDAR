@@ -1,0 +1,18 @@
+# Core
+numpy>=1.24
+rosbags>=0.11
+open3d>=0.18
+opencv-python>=4.8
+scipy>=1.10
+plyfile>=1.0
+tqdm>=4.65
+
+# Structure-from-Motion (CPU-only SIFT in the pip build)
+pycolmap>=4.0
+
+# Gaussian splatting (install separately, CUDA build):
+#   pip install torch --index-url https://download.pytorch.org/whl/cu121
+#   pip install gsplat
+# gsplat also needs a CUDA toolkit (nvcc) at runtime -- see README "nvcc for gsplat".
+# torch
+# gsplat
